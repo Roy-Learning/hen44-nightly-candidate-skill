@@ -5,7 +5,6 @@
   "display_name": "B端夜间候选批次",
   "name": "b2b-nightly-candidate-batch",
   "description": "无人值守补充具有官方公开业务邮箱的完整美国客户候选；受控原子写回，用户结果使用表格。",
-  "source_type": "installed_zip",
   "version": "1.0.56",
   "enabled": true,
   "disclosure": "eager",
