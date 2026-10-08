@@ -1,0 +1,32 @@
+{
+  "schema": "standalone-hook-source/v1",
+  "generated": "scripts/qualify_candidate_batch.py",
+  "core": "source/qualify_candidate_batch_core.py",
+  "inline_import": "from agents.evidence_text_projection import canonical_source_quote, normalize_evidence_text",
+  "scope_symbols": [
+    "_BODY",
+    "_NON_BODY",
+    "page_body_text"
+  ],
+  "projection_symbols": "all top-level functions",
+  "sources": {
+    "source/qualify_candidate_batch_core.py": "a98b5de60abcbfec8fd0c23346addcaa3958a05702553a77a00e88fdd893301b",
+    "source/evidence_text_projection.py": "65df8de5a65f967bee2e07e8dc724a1c170d82e9259505fe74b6431c7e79e569",
+    "source/semantic_review_source_scope.py": "9f23ddc99e459f726c4227973def1956ca8d7902debe4c33e3701fdd8d78c87e",
+    "source/assess_candidate_qualification_core.py": "9ceca3eeb74b30148cb7c1a688c6e9534129e71332f6905e51ec8cc2e4414afc"
+  },
+  "generated_sha256": "3aac0129c98dc8509c9f054300eb208dc705af54abcca330d8bff8bfe039345c",
+  "status": "candidate 1.0.56: official business email required; table output; business evidence retained; platform runtime pending",
+  "platform_source_commit": "c4ec779a7607cbdb609dad96cf3b88891e17d895",
+  "generator": "local_only/build_nightly_package.py: preserve baseline standalone code and synchronize changed maintained core functions with ast.get_source_segment",
+  "python_version": "3.12.0",
+  "minimum_python": "3.11",
+  "verified_consumer_python": "3.11.15",
+  "additional_inline_imports": [
+    "from agents.semantic_review_source_scope import page_body_text"
+  ],
+  "generated_transforms": [
+    "remove comments/docstrings/non-string blank lines; rank logical block indentation; identical executable AST and unchanged literals; no ast.unparse",
+    "Replace changed top-level functions from maintained core using ast.get_source_segment; preserve all other executable code"
+  ]
+}

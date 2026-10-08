@@ -1,0 +1,228 @@
+{
+  "skill_id": "9d22d4db-6f99-4e6f-82f7-e1bc30a539bb",
+  "key": "b2b-nightly-candidate-batch",
+  "aliases": [],
+  "display_name": "B端夜间候选批次",
+  "name": "b2b-nightly-candidate-batch",
+  "description": "无人值守补充具有官方公开业务邮箱的完整美国客户候选；受控原子写回，用户结果使用表格。",
+  "source_type": "installed_zip",
+  "version": "1.0.56",
+  "enabled": true,
+  "disclosure": "eager",
+  "allowed_agents": [
+    "B端夜间候选助手"
+  ],
+  "bundled_resources": [
+    {
+      "rel_path": "scripts/qualify_candidate_batch.py",
+      "kind": "script",
+      "exec_mode": "hook_exec",
+      "content_hash": "sha256:3aac0129c98dc8509c9f054300eb208dc705af54abcca330d8bff8bfe039345c"
+    },
+    {
+      "rel_path": "scripts/assess_candidate_qualification.py",
+      "kind": "script",
+      "exec_mode": "hook_exec",
+      "content_hash": "sha256:2db2c085ff8d521b7ba2668f1a5a41bbcbda20ad4d297811cec2a4f7a7558e44"
+    },
+    {
+      "rel_path": "scripts/assess_candidate_readiness.py",
+      "kind": "script",
+      "exec_mode": "hook_exec",
+      "content_hash": "sha256:c36746c41198021eae8784115f3a5f28231a08089e97da430d0f53b6e32497f9"
+    }
+  ],
+  "hooks": [
+    {
+      "hook_id": "qualify_candidate_batch",
+      "phase": "before_complete",
+      "rel_path": "scripts/qualify_candidate_batch.py",
+      "required": true,
+      "timeout_seconds": 600,
+      "expected_exit_code": 0,
+      "args": [
+        "hen44_candidate_decision.json"
+      ],
+      "workspace_paths": [
+        "hen44_candidate_decision.json"
+      ]
+    },
+    {
+      "hook_id": "assess_candidate_qualification",
+      "phase": "explicit_readonly",
+      "rel_path": "scripts/assess_candidate_qualification.py",
+      "required": false,
+      "effect": "none",
+      "timeout_seconds": 45,
+      "expected_exit_code": 0,
+      "args": [
+        "hen44_candidate_screening.json"
+      ],
+      "workspace_paths": [
+        "hen44_candidate_screening.json"
+      ]
+    },
+    {
+      "hook_id": "assess_candidate_readiness",
+      "phase": "explicit_readonly",
+      "rel_path": "scripts/assess_candidate_readiness.py",
+      "required": false,
+      "effect": "none",
+      "timeout_seconds": 60,
+      "expected_exit_code": 0,
+      "args": [
+        "hen44_candidate_readiness.json"
+      ],
+      "workspace_paths": [
+        "hen44_candidate_readiness.json"
+      ]
+    }
+  ],
+  "conditional_contract_version": 1,
+  "conditional_contract_skill_id": "9d22d4db-6f99-4e6f-82f7-e1bc30a539bb",
+  "decision_contracts": [
+    {
+      "decision_id": "nightly_candidate_batch",
+      "producer": {
+        "kind": "host_hook",
+        "hook_id": "qualify_candidate_batch"
+      },
+      "result_schema": {
+        "eligible_count": "non_negative_integer",
+        "input_digest": "sha256",
+        "basis_content_hash": "sha256",
+        "mutation_plan_digest": "sha256_or_null"
+      },
+      "semantic_review": {
+        "model": "claude-sonnet-4-6",
+        "criteria": [
+          {
+            "id": "entity_type",
+            "rule": "Every proposed entity must itself be a furniture retailer, independent online retailer, wholesaler, or design studio. The customer excludes businesses that deal exclusively in used/pre-owned furniture or consignment: if verified official sources clearly establish that business model for this entity, return unsupported even though it is technically a furniture retailer. Check all supplied official source context for contradictory business-model facts, not only a selectively quoted generic store description. Do not exclude a merchant just because a source mentions used items, consignment, clearance, or outlet sales: a mixed merchant with a current new-furniture offering may qualify. A design studio is still an allowed entity type and is not required to operate retail inventory. When facts conflict or do not establish a proposed claim, return uncertain. Do not assume a used-only or consignment-only business merely because the source does not explicitly use the word new. Review entity_type at the declared-quote level. The quote must itself directly state that this entity operates a furniture store or furniture business, sells/offers/wholesales furniture, or provides an allowed design service. Direct type identities such as 'trusted furniture retailer' are sufficient even with a reputation adjective; neither a literal retailer word nor a sells/offers verb is mandatory when the same quote clearly states the allowed business activity. A pure brand-praise, trust, destination, reputation, or quality slogan remains insufficient, and do not borrow another source or field quote to silently approve it. Marketing, reputation, or destination language does not erase a sufficient direct type fact contained in the same declared quote: a statement that the same entity started as a furniture store and has grown into a current finite store network is a direct furniture-business fact. A purely historical furniture-store fact is insufficient if the quote says the entity has since changed to another business. If the full source establishes an allowed entity but this field quote is weak, return uncertain and identify that the entity_type quote must be repaired with the direct source statement. Preserve the existing independent-online-retailer, wholesaler, and design-studio paths and the used-only/consignment exclusions."
+          },
+          {
+            "id": "independent_operation",
+            "rule": "Judge this proposed merchant's ownership and operating structure from the combined verified official-body facts supplied for the same entity. A direct statement of independent ownership/operation or locally owned and operated is sufficient, but those exact phrases are NOT mandatory. The customer also accepts a coherent combination of positive family/owner-run business facts and a current finite local or regional store/showroom operation. Explicit family ownership or owner management together with the same entity's current limited local/regional business network can support independent operation; do not reject it solely for using family-owned or family-operated wording. Cite the relevant declared and host-verified quotes together, including quotes declared in other fields for this same candidate when they supply part of the combined evidence. State the factual basis of the inference. Mere historical founder stories, friendliness, local marketing, family names without current business context, a supplier's independence, or absence of a chain statement alone remain insufficient. An identified nationwide retail chain, its store, franchise or subsidiary is disqualified, even if some local owners are named. Do not confuse a merchant carrying a nationwide manufacturer's brands or offering nationwide delivery with membership in a nationwide retail chain. Contradictory or insufficient ownership/operation facts mean uncertain; do not invent missing facts."
+          },
+          {
+            "id": "regional_scope",
+            "rule": "Assess current local or regional operation using the combined verified official-body facts for this same merchant. A direct statement of serving a named retail market or a current finite store/showroom network is sufficient, but a separate literal serves-this-region sentence is NOT required. Current furniture-business facts plus locally owned/operated status and an existing store/showroom identified by city or address may together establish the local/regional property. A current family/owner-run merchant with a finite local/regional store network may qualify on the same basis. Cite the relevant declared, host-verified quotes together; they may be declared in different fields or come from different fetched official pages for this candidate. Do not demand that every component appear in one quote or silently replace an unfetched source. A lone address or place-name fragment with no established current business/store context, a warehouse, delivery/shipping/pickup/installation coverage alone, a historical intention or future plan is still insufficient. Shipping coverage is not operating scope, but its presence does not negate other sufficient current business/store facts. Return uncertain when the combined supplied facts do not establish current local/regional operation."
+          },
+          {
+            "id": "qualification_evidence_exclusions",
+            "rule": "Audit the source and business-model exclusions consistently with the customer's combined-fact standard. For the three qualification fields, SEO title/meta description, H1/H2 index entries or navigation, search snippets and link labels are discovery-only and cannot establish qualification. Meaningful headings within the fetched official page body may support their actual claims. Ownership and geography may be established by combining the same candidate's declared, host-verified official-body quotes across fields/pages; do not restore a single-quote, mandatory independently-owned phrase, mandatory locally-owned-and-operated phrase, or separate serves-region sentence requirement. Family/owner-run facts plus a current finite local/regional business network may support independent operation. Current furniture-business facts plus local ownership/operation and an existing showroom/store city/address may support regional operation. A source quote must remain genuine and correctly bound; combining facts never authorizes invented text, concatenated fake quotations, substituted companies, unverified links or model summaries. Historical family narrative alone, absence of chain affiliation alone, or a bare address/logistics statement without current operating context is insufficient. Check supplied official context for contradictory affiliation or business-model facts. Exclude nationwide retail chains and their stores/franchises/subsidiaries, and businesses exclusively selling used/pre-owned furniture or exclusively consigning furniture. A generic store quote cannot override that evidence. Mixed merchants with current new furniture, clearance/outlet sales and design studios are not automatically excluded. If one required qualification still lacks sufficient combined admissible facts, return uncertain; do not reject a supported combination merely because one individual quote is incomplete on its own."
+          },
+          {
+            "id": "business_contact_completeness",
+            "rule": "Every proposed candidate must provide a non-empty, syntactically valid public business email. The declared contact source must be current official page body for this same entity, and must explicitly publish the exact address for business inquiries. A verified phone, form or social account never substitutes for email. If email is absent, unsupported, guessed, private, a placeholder/example, third-party support, or belongs to another entity, return unsupported or uncertain and do not authorize admission. An officially published Gmail, Hotmail or other third-party-mailbox address offered by this business is allowed; matching the website domain is not required. Do not silently repair the producer claim. Cite the declared contact quote. Public availability does not establish deliverability, consent or authorization to send."
+          },
+          {
+            "id": "specific_product_page",
+            "rule": "Every candidate.product.url must be an individual furniture product detail page actually present among the supplied verified source URLs. The content for that same URL must describe the specific product identified by product.value. A category, search-results, collection or catalog listing, generic home page, or recommendation grid is insufficient even if a card on it contains a product name, model/SKU or price. A link from such a listing to a product detail page does not mean the linked page was fetched. Assess the purpose and content of the declared page, not URL keywords or path shape. A real individual product page may use query parameters, include related-product recommendations or product variants, offer a request-for-quote instead of checkout, and omit price or stock availability. Those features alone must not cause rejection. Require direct detail-page evidence for the proposed item; return uncertain when the supplied context cannot establish the page type. Do not silently substitute a different URL, quote or unfetched page for the proposal."
+          }
+        ],
+        "source_scope": "page_body",
+        "thinking_mode": "disabled"
+      }
+    }
+  ],
+  "conditional_obligations": [
+    {
+      "obligation_id": "persist_candidate_batch",
+      "precondition": {
+        "decision_id": "nightly_candidate_batch",
+        "path": "/eligible_count",
+        "operator": "gt_int",
+        "value": 0
+      },
+      "target": {
+        "wiki": "B端客户开发",
+        "filename": "customer_feedback_registry.md"
+      },
+      "steps": [
+        {
+          "detector": "knowledge_patch_receipt"
+        },
+        {
+          "detector": "knowledge_readback_receipt"
+        }
+      ]
+    }
+  ],
+  "readonly_assessment_contract_version": 1,
+  "readonly_assessment_contract_skill_id": "9d22d4db-6f99-4e6f-82f7-e1bc30a539bb",
+  "readonly_assessments": [
+    {
+      "assessment_id": "candidate_qualification_prescreen",
+      "producer": {
+        "kind": "host_hook",
+        "hook_id": "assess_candidate_qualification"
+      },
+      "subject_identity_fields": [
+        "name",
+        "domain"
+      ],
+      "semantic_review": {
+        "model": "claude-sonnet-4-6",
+        "criteria": [
+          {
+            "id": "entity_type",
+            "rule": "Every proposed entity must itself be a furniture retailer, independent online retailer, wholesaler, or design studio. The customer excludes businesses that deal exclusively in used/pre-owned furniture or consignment: if verified official sources clearly establish that business model for this entity, return unsupported even though it is technically a furniture retailer. Check all supplied official source context for contradictory business-model facts, not only a selectively quoted generic store description. Do not exclude a merchant just because a source mentions used items, consignment, clearance, or outlet sales: a mixed merchant with a current new-furniture offering may qualify. A design studio is still an allowed entity type and is not required to operate retail inventory. When facts conflict or do not establish a proposed claim, return uncertain. Do not assume a used-only or consignment-only business merely because the source does not explicitly use the word new. Review entity_type at the declared-quote level. The quote must itself directly state that this entity operates a furniture store or furniture business, sells/offers/wholesales furniture, or provides an allowed design service. Direct type identities such as 'trusted furniture retailer' are sufficient even with a reputation adjective; neither a literal retailer word nor a sells/offers verb is mandatory when the same quote clearly states the allowed business activity. A pure brand-praise, trust, destination, reputation, or quality slogan remains insufficient, and do not borrow another source or field quote to silently approve it. Marketing, reputation, or destination language does not erase a sufficient direct type fact contained in the same declared quote: a statement that the same entity started as a furniture store and has grown into a current finite store network is a direct furniture-business fact. A purely historical furniture-store fact is insufficient if the quote says the entity has since changed to another business. If the full source establishes an allowed entity but this field quote is weak, return uncertain and identify that the entity_type quote must be repaired with the direct source statement. Preserve the existing independent-online-retailer, wholesaler, and design-studio paths and the used-only/consignment exclusions."
+          },
+          {
+            "id": "independent_operation",
+            "rule": "Judge this proposed merchant's ownership and operating structure from the combined verified official-body facts supplied for the same entity. A direct statement of independent ownership/operation or locally owned and operated is sufficient, but those exact phrases are NOT mandatory. The customer also accepts a coherent combination of positive family/owner-run business facts and a current finite local or regional store/showroom operation. Explicit family ownership or owner management together with the same entity's current limited local/regional business network can support independent operation; do not reject it solely for using family-owned or family-operated wording. Cite the relevant declared and host-verified quotes together, including quotes declared in other fields for this same candidate when they supply part of the combined evidence. State the factual basis of the inference. Mere historical founder stories, friendliness, local marketing, family names without current business context, a supplier's independence, or absence of a chain statement alone remain insufficient. An identified nationwide retail chain, its store, franchise or subsidiary is disqualified, even if some local owners are named. Do not confuse a merchant carrying a nationwide manufacturer's brands or offering nationwide delivery with membership in a nationwide retail chain. Contradictory or insufficient ownership/operation facts mean uncertain; do not invent missing facts."
+          },
+          {
+            "id": "regional_scope",
+            "rule": "Assess current local or regional operation using the combined verified official-body facts for this same merchant. A direct statement of serving a named retail market or a current finite store/showroom network is sufficient, but a separate literal serves-this-region sentence is NOT required. Current furniture-business facts plus locally owned/operated status and an existing store/showroom identified by city or address may together establish the local/regional property. A current family/owner-run merchant with a finite local/regional store network may qualify on the same basis. Cite the relevant declared, host-verified quotes together; they may be declared in different fields or come from different fetched official pages for this candidate. Do not demand that every component appear in one quote or silently replace an unfetched source. A lone address or place-name fragment with no established current business/store context, a warehouse, delivery/shipping/pickup/installation coverage alone, a historical intention or future plan is still insufficient. Shipping coverage is not operating scope, but its presence does not negate other sufficient current business/store facts. Return uncertain when the combined supplied facts do not establish current local/regional operation."
+          }
+        ],
+        "source_scope": "page_body",
+        "thinking_mode": "disabled"
+      }
+    },
+    {
+      "assessment_id": "candidate_full_readiness",
+      "producer": {
+        "kind": "host_hook",
+        "hook_id": "assess_candidate_readiness"
+      },
+      "subject_identity_fields": [
+        "official_name",
+        "canonical_domain"
+      ],
+      "semantic_review": {
+        "model": "claude-sonnet-4-6",
+        "criteria": [
+          {
+            "id": "entity_type",
+            "rule": "Every proposed entity must itself be a furniture retailer, independent online retailer, wholesaler, or design studio. The customer excludes businesses that deal exclusively in used/pre-owned furniture or consignment: if verified official sources clearly establish that business model for this entity, return unsupported even though it is technically a furniture retailer. Check all supplied official source context for contradictory business-model facts, not only a selectively quoted generic store description. Do not exclude a merchant just because a source mentions used items, consignment, clearance, or outlet sales: a mixed merchant with a current new-furniture offering may qualify. A design studio is still an allowed entity type and is not required to operate retail inventory. When facts conflict or do not establish a proposed claim, return uncertain. Do not assume a used-only or consignment-only business merely because the source does not explicitly use the word new. Review entity_type at the declared-quote level. The quote must itself directly state that this entity operates a furniture store or furniture business, sells/offers/wholesales furniture, or provides an allowed design service. Direct type identities such as 'trusted furniture retailer' are sufficient even with a reputation adjective; neither a literal retailer word nor a sells/offers verb is mandatory when the same quote clearly states the allowed business activity. A pure brand-praise, trust, destination, reputation, or quality slogan remains insufficient, and do not borrow another source or field quote to silently approve it. Marketing, reputation, or destination language does not erase a sufficient direct type fact contained in the same declared quote: a statement that the same entity started as a furniture store and has grown into a current finite store network is a direct furniture-business fact. A purely historical furniture-store fact is insufficient if the quote says the entity has since changed to another business. If the full source establishes an allowed entity but this field quote is weak, return uncertain and identify that the entity_type quote must be repaired with the direct source statement. Preserve the existing independent-online-retailer, wholesaler, and design-studio paths and the used-only/consignment exclusions."
+          },
+          {
+            "id": "independent_operation",
+            "rule": "Judge this proposed merchant's ownership and operating structure from the combined verified official-body facts supplied for the same entity. A direct statement of independent ownership/operation or locally owned and operated is sufficient, but those exact phrases are NOT mandatory. The customer also accepts a coherent combination of positive family/owner-run business facts and a current finite local or regional store/showroom operation. Explicit family ownership or owner management together with the same entity's current limited local/regional business network can support independent operation; do not reject it solely for using family-owned or family-operated wording. Cite the relevant declared and host-verified quotes together, including quotes declared in other fields for this same candidate when they supply part of the combined evidence. State the factual basis of the inference. Mere historical founder stories, friendliness, local marketing, family names without current business context, a supplier's independence, or absence of a chain statement alone remain insufficient. An identified nationwide retail chain, its store, franchise or subsidiary is disqualified, even if some local owners are named. Do not confuse a merchant carrying a nationwide manufacturer's brands or offering nationwide delivery with membership in a nationwide retail chain. Contradictory or insufficient ownership/operation facts mean uncertain; do not invent missing facts."
+          },
+          {
+            "id": "regional_scope",
+            "rule": "Assess current local or regional operation using the combined verified official-body facts for this same merchant. A direct statement of serving a named retail market or a current finite store/showroom network is sufficient, but a separate literal serves-this-region sentence is NOT required. Current furniture-business facts plus locally owned/operated status and an existing store/showroom identified by city or address may together establish the local/regional property. A current family/owner-run merchant with a finite local/regional store network may qualify on the same basis. Cite the relevant declared, host-verified quotes together; they may be declared in different fields or come from different fetched official pages for this candidate. Do not demand that every component appear in one quote or silently replace an unfetched source. A lone address or place-name fragment with no established current business/store context, a warehouse, delivery/shipping/pickup/installation coverage alone, a historical intention or future plan is still insufficient. Shipping coverage is not operating scope, but its presence does not negate other sufficient current business/store facts. Return uncertain when the combined supplied facts do not establish current local/regional operation."
+          },
+          {
+            "id": "qualification_evidence_exclusions",
+            "rule": "Audit the source and business-model exclusions consistently with the customer's combined-fact standard. For the three qualification fields, SEO title/meta description, H1/H2 index entries or navigation, search snippets and link labels are discovery-only and cannot establish qualification. Meaningful headings within the fetched official page body may support their actual claims. Ownership and geography may be established by combining the same candidate's declared, host-verified official-body quotes across fields/pages; do not restore a single-quote, mandatory independently-owned phrase, mandatory locally-owned-and-operated phrase, or separate serves-region sentence requirement. Family/owner-run facts plus a current finite local/regional business network may support independent operation. Current furniture-business facts plus local ownership/operation and an existing showroom/store city/address may support regional operation. A source quote must remain genuine and correctly bound; combining facts never authorizes invented text, concatenated fake quotations, substituted companies, unverified links or model summaries. Historical family narrative alone, absence of chain affiliation alone, or a bare address/logistics statement without current operating context is insufficient. Check supplied official context for contradictory affiliation or business-model facts. Exclude nationwide retail chains and their stores/franchises/subsidiaries, and businesses exclusively selling used/pre-owned furniture or exclusively consigning furniture. A generic store quote cannot override that evidence. Mixed merchants with current new furniture, clearance/outlet sales and design studios are not automatically excluded. If one required qualification still lacks sufficient combined admissible facts, return uncertain; do not reject a supported combination merely because one individual quote is incomplete on its own."
+          },
+          {
+            "id": "business_contact_completeness",
+            "rule": "Every proposed candidate must provide a non-empty, syntactically valid public business email. The declared contact source must be current official page body for this same entity, and must explicitly publish the exact address for business inquiries. A verified phone, form or social account never substitutes for email. If email is absent, unsupported, guessed, private, a placeholder/example, third-party support, or belongs to another entity, return unsupported or uncertain and do not authorize admission. An officially published Gmail, Hotmail or other third-party-mailbox address offered by this business is allowed; matching the website domain is not required. Do not silently repair the producer claim. Cite the declared contact quote. Public availability does not establish deliverability, consent or authorization to send."
+          },
+          {
+            "id": "specific_product_page",
+            "rule": "Every candidate.product.url must be an individual furniture product detail page actually present among the supplied verified source URLs. The content for that same URL must describe the specific product identified by product.value. A category, search-results, collection or catalog listing, generic home page, or recommendation grid is insufficient even if a card on it contains a product name, model/SKU or price. A link from such a listing to a product detail page does not mean the linked page was fetched. Assess the purpose and content of the declared page, not URL keywords or path shape. A real individual product page may use query parameters, include related-product recommendations or product variants, offer a request-for-quote instead of checkout, and omit price or stock availability. Those features alone must not cause rejection. Require direct detail-page evidence for the proposed item; return uncertain when the supplied context cannot establish the page type. Do not silently substitute a different URL, quote or unfetched page for the proposal."
+          }
+        ],
+        "source_scope": "page_body",
+        "thinking_mode": "disabled"
+      }
+    }
+  ]
+}
